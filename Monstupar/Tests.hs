@@ -15,10 +15,15 @@ mustFail s = not . mustParse s
 infixl 2 &.&
 (&.&) p1 p2 x = p1 x && p2 x
 
+infixl &&&
+(&&&) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+(&&&) p1 p2 = \x -> p1 x && p2 x
+
 --------------------------------------------------------------------------------
 -- Тесты
 
 -- Правильная скобочная последовательность
+
 balPar = bp >> eof where
     bp = (do
           char '('
@@ -38,8 +43,22 @@ balParTest = mustParse ""
 
 -- Список натуральных чисел
 -- тут следует использовать класс Read
+
+digit :: Monstupar Char Char
+digit = oneOf ['0'..'9']
+
+int :: Monstupar Char Integer
+int = do
+  xs <- many1 digit
+  return $ read xs
+
 natList :: Monstupar Char [Integer]
-natList = undefined
+natList = do
+    x <- int
+    xs <- many (char ',' >> int)
+    eof
+    return (x:xs)
+    
 
 natListTest = mustFail  ""
           &.& mustParse "0"
@@ -50,3 +69,4 @@ natListTest = mustFail  ""
           &.& mustFail  "10,20,12,3423,0.,234,234,2342,22342,22232,17583,9573"
           $ natList
 
+main = balParTest && natListTest
